@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Finance Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen">
+
+<div class="max-w-6xl mx-auto p-4 py-8">
+    
+    <!-- Header & Month Selector -->
+    <div class="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-md mb-8">
+        <h1 class="text-2xl font-bold text-blue-700 flex items-center">
+            <i class="fas fa-wallet mr-2"></i> Finance Tracker
+        </h1>
+        <div class="mt-4 md:mt-0 flex items-center space-x-3">
+            <label for="month-selector" class="font-semibold text-gray-600">Select Month:</label>
+            <input type="month" id="month-selector" class="border border-gray-300 rounded p-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left Column: Entry Form & Transaction List -->
+        <div class="lg:col-span-1 space-y-8">
+            
+            <!-- Entry Form -->
+            <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-500">
+                <h2 class="text-lg font-semibold mb-4">Add New Transaction</h2>
+                <form id="transaction-form" class="space-y-4">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Type</label>
+                        <select id="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500" required>
+                            <option value="Income">Income (Salary, Bonus)</option>
+                            <option value="EMI">EMI (Loans)</option>
+                            <option value="Premium">Premium (Insurance)</option>
+                            <option value="Savings">Savings / Investments</option>
+                            <option value="Living">Living Expense (Groceries, Bills)</option>
+                            <option value="Discretionary">Discretionary (Fun, Dining)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Amount ($)</label>
+                        <input type="number" id="amount" step="0.01" min="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500" placeholder="0.00" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Date</label>
+                        <input type="date" id="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Description</label>
+                        <input type="text" id="description" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500" placeholder="e.g., Groceries from Walmart" required>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition">
+                        Add Transaction
+                    </button>
+                </form>
+            </div>
+
+            <!-- Transaction List -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold mb-4">Transactions (<span id="current-month-display"></span>)</h2>
+                <div class="max-h-80 overflow-y-auto pr-2">
+                    <ul id="transaction-list" class="space-y-3">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+                <div id="no-transactions" class="text-gray-500 text-sm text-center py-4 hidden">
+                    No transactions found for this month.
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Dashboard & Insights -->
+        <div class="lg:col-span-2 space-y-8">
+            
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <p class="text-xs text-gray-500 font-semibold uppercase">Total Income</p>
+                    <p class="text-xl font-bold text-gray-800" id="card-income">$0.00</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+                    <p class="text-xs text-gray-500 font-semibold uppercase">Total Expenses</p>
+                    <p class="text-xl font-bold text-gray-800" id="card-expenses">$0.00</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-teal-500">
+                    <p class="text-xs text-gray-500 font-semibold uppercase">Total Savings</p>
+                    <p class="text-xl font-bold text-gray-800" id="card-savings">$0.00</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                    <p class="text-xs text-gray-500 font-semibold uppercase">Remaining</p>
+                    <p class="text-xl font-bold text-gray-800" id="card-remaining">$0.00</p>
+                </div>
+            </div>
+
+            <!-- Charts and Insights row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-lg font-semibold mb-4 text-center">Expense Breakdown</h2>
+                    <div class="w-full mx-auto" style="max-width: 250px;">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md flex flex-col h-full">
+                    <h2 class="text-lg font-semibold mb-4 text-blue-700"><i class="fas fa-lightbulb mr-2"></i> Monthly Insights</h2>
+                    <div id="insights-container" class="flex-grow">
+                        <ul id="insights-list" class="space-y-4 text-sm text-gray-700">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
