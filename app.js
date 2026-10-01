@@ -1,5 +1,27 @@
+// Helpers
+// Today's date as YYYY-MM-DD in the user's local time zone
+// (toISOString() uses UTC, which gives yesterday's date in India before 5:30 AM)
+function localDateStr(d = new Date()) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// Escape user-entered text before putting it into innerHTML
+function escapeHTML(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function loadTransactions() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('finance_transactions'));
+        return Array.isArray(saved) ? saved : [];
+    } catch (e) {
+        return [];
+    }
+}
+
 // Globals
-let transactions = JSON.parse(localStorage.getItem('finance_transactions')) || [];
+let transactions = loadTransactions();
 let chartInstance = null;
 
 const monthSelector = document.getElementById('month-selector');
@@ -8,7 +30,7 @@ const transactionForm = document.getElementById('transaction-form');
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     // Set default date in form to today
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateStr();
     document.getElementById('date').value = today;
 
     // Set default month in selector to current month (YYYY-MM)
@@ -66,6 +88,10 @@ function deleteTransaction(id) {
 }
 
 function updateDashboard() {
+    // If the month picker was cleared, fall back to the current month
+    if (!monthSelector.value) {
+        monthSelector.value = localDateStr().substring(0, 7);
+    }
     const selectedMonth = monthSelector.value; // Format: YYYY-MM
     
     // Display formatted month name
@@ -165,8 +191,8 @@ function renderTransactionList(filteredTx) {
                     <i class="${iconClass} text-sm"></i>
                 </div>
                 <div>
-                    <p class="text-sm font-semibold text-gray-800">${tx.description}</p>
-                    <p class="text-xs text-gray-500">${tx.date} • ${tx.type}</p>
+                    <p class="text-sm font-semibold text-gray-800">${escapeHTML(tx.description)}</p>
+                    <p class="text-xs text-gray-500">${escapeHTML(tx.date)} • ${escapeHTML(tx.type)}</p>
                 </div>
             </div>
             <div class="flex items-center space-x-3">
@@ -181,10 +207,15 @@ function renderTransactionList(filteredTx) {
 }
 
 function renderChart(needs, wants, savings, remaining) {
+    // If the Chart.js CDN failed to load, skip the chart instead of
+    // crashing (which would also stop the insights from rendering)
+    if (typeof Chart === 'undefined') return;
+
     const ctx = document.getElementById('expenseChart').getContext('2d');
-    
+
     if (chartInstance) {
         chartInstance.destroy();
+        chartInstance = null;
     }
 
     if (needs === 0 && wants === 0 && savings === 0 && remaining <= 0) {
